@@ -1,0 +1,96 @@
+---
+title: 👀 How do Large Language Models see?
+date: '2024-05-06'
+tags: ['2024', 'llm', 'theory', 'cv', 'transformers']
+draft: true
+summary: Understanding image encoding with Large Language Models.
+---
+
+In 2024, many foundation models are realeased with native vision capabilities.
+Anthropic Claude 3, OpenAI GPT-4 and Google Gemini all have the ability to suggest a recipie from a picture of your fridge.
+
+As well as the fun and sometimes useful usecases from photos of the real world, vision
+capable models can also be set to work reading the pictures many of us interact with most in our working day...
+our computer screens.
+
+## The Human Eye
+
+The human eye takes an input of electromagnetic waves in the visible spectrum that happen to have scattered off an object.
+This light passes through the cornea and pupil, is refracted by the lens, focussed onto the retina creating an electrical
+signal which is fired along the optic nerve to be processed by the brain.
+
+> <Image alt="human eye" src="/static/images/human-eye.jpg" width={346} height={346} />
+> <cite>National Eye Institute, National Institutes of Health</cite>
+
+## Image Encoding
+
+Computer vision works very differently to human vision.
+The input to a vision model starts with a digital image.
+For example, the picture of the lionfish from the ImageNet 1k dataset.
+
+> <Image alt="lionfish" src="/static/images/lionfish.jpg" width={346} height={346} />
+> <cite>ImageNet 1k dataset: https://image-net.org</cite>
+
+It has dimentions 640x480 and is in the RGB colour space.
+Therefore the image is described by a tensor with 921,600 floating point numbers.
+
+```
+640 x 480 x 3 = 921,600
+```
+
+When inputting images into a computer vision model, we need to 'flatten' the image to map the pixel values to
+the first layer of our neural network.
+
+# The Vision Transformer (ViT)
+
+It's also common to transform the image into a more compressed format.
+It's unlikely that the function we want to model will have such high dimentionality so it would be
+over the top to pass all of this information to the model. In practice, we split an image into fixed-size patches (e.g. 16x16 pixels),
+linearly embed each of them, add position embeddings, and feed the resulting sequence of vectors to a standard Transformer
+encoder.
+
+> <Image alt="Vision Transformer" src="/static/images/vit.png" width={648} height={648} />
+> <cite>
+>   An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale
+>   https://arxiv.org/pdf/2010.11929
+> </cite>
+
+## What does the LLM "see"?
+
+In the forward pass, the vision capable LLM is operating on the embeded patches. It's not clear exactly what the vector size is
+for the 3rd party models as the model architectures are not published, but we can assume it's in the order of 1000s of dimensions.
+For our purposes, we wont concern ourselves with the exact size of the vector, but instead empirically test the model to see how well it can "see".
+
+We can do this by creating a series of images with different patterns and measuring the output of the model.
+Taking inspiration from the human eye test, we can create a series of images with letters of decreasing size
+and measure the smallest size that the model can read. By using the same test on different models, we can compare their relative performance.
+
+```javascript
+var num1, num2, sum
+num1 = prompt('Enter first number')
+num2 = prompt('Enter second number')
+sum = parseInt(num1) + parseInt(num2) // "+" means "add"
+alert('Sum = ' + sum) // "+" means combine into a string
+```
+
+Some Python code 🐍
+
+```python
+def fib():
+    a, b = 0, 1
+    while True:            # First iteration:
+        yield a            # yield 0 to start with and then
+        a, b = b, a + b    # a will now be 1, and b will also be 1, (0 + 1)
+
+for index, fibonacci_number in zip(range(10), fib()):
+     print('{i:3}: {f:3}'.format(i=index, f=fibonacci_number))
+```
+
+In order to get a handle on the capabilities of these vision models, we should develop
+tests to measure their performance. This will help us as AI engineers to compare models for
+vision usecases and to understand the limitations of our tools.
+
+Many humans benchmark their vison semi-regularly in their anual eyetest.
+For humans this is used to check the health of the eye and retina
+and find the appropriate prescription incase it's required to make corrections to the natural optical
+parameters of the eye.
