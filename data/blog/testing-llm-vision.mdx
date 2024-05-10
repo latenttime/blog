@@ -13,5 +13,13 @@ vision usecases and to understand the limitations of our tools.
 People benchmark their vison semi-regularly in an eyetest. A common metric is visual acuity (VA).
 VA is a measure of the ability of the eye to distinguish shapes and the details of objects at a given distance.
 
+In the forward pass, the vision capable LLM is operating on the embeded patches. It's not clear exactly what the vector size is
+for the 3rd party models as the model architectures are not published, but we can assume it's in the order of 1000s of dimensions.
+For our purposes, we wont concern ourselves with the exact size of the vector, but instead empirically test the model to see how well it can "see".
+
+We can do this by creating a series of images with different patterns and measuring the output of the model.
+Taking inspiration from the human eye test, we can create a series of images with letters of decreasing size
+and measure the smallest size that the model can read. By using the same test on different models, we can compare their relative performance.
+
 > <Image alt="snellen" src="/static/images/snellen.png" width={720} height={486} />
 > Queensland State Archives, Digital Image ID 2830 ID label: 1138674, Public Domain, via Wikimedia Commons
