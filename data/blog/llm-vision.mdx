@@ -41,10 +41,10 @@ Instead of the brain, we have computer vision models that process these signals 
 The input to a vision model starts with a digital image.
 A digital image is an 2D array of pixels where each pixel at coordinates `(x, y)` has a numerical value which is stored as bytes in a file.
 
-Consider the 43,879th row of the ImageNet 1k training dataset. It appears to be a picture of a lionfish:
+Consider this image from the ImageNet dataset. It appears to be a picture of a lionfish:
 
 > <Image alt="lionfish" src="/static/images/lionfish.jpg" width={346} height={346} />
-> <cite>ImageNet 1k dataset: https://image-net.org</cite>
+> <cite>ImageNet dataset: https://image-net.org</cite>
 
 The image has dimensions `640 x 480`. The pixel in position `(0, 320)` is in the first column and the middle row.
 This pixel has the `(R, G, B)` value `(59, 142, 164)`. Each number is a byte with a value between 0 and 2<sup>8</sup> = 255.
@@ -75,12 +75,7 @@ On a more practical level, we know that the attention blocks in the transformer 
 Therefore it would be very computationally expensive to process raw images in this way.
 
 In practice, we split an image into fixed-size patches (e.g. 16x16 pixels), linearly embed each of them, add position embeddings, and feed the resulting sequence of vectors to a standard transformer encoder.
-
-> <Image alt="Vision Transformer" src="/static/images/vit.png" width={648} height={648} />
-> <cite>
->   An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale
->   https://arxiv.org/pdf/2010.11929
-> </cite>
+This approach was laid out in [An Image is Worth 16x16 Words](https://arxiv.org/pdf/2010.11929), showing how transformers can be applied to computer vision.
 
 ## Hands on with the a ViT model
 
@@ -118,7 +113,16 @@ Bear in mind that the model is actually working with 4x smaller patches.
 
 <Image alt="patch grid" src="/static/images/patch_grid.png" width={320} height={240} />
 
-Note that sequence order matters here. Just like with text, the meaning changes if the patches are shuffled.
+Let's choose a single patch and see how we go from RBG pixel integers to a 768 dimension embedding vector.
+The first step is to flatten the patch. Similar to how we flatten the 2D array of patches in the original image, we take the pixels row by row and concatenate them into a 1D array.
+We then normalise the integer RGB pixel values to be between 0 and 1.
+It's then common to use a linear projection which is implemented as a learnable linear layer.
+This multiplication by a weight matrix is equivalent to a linear transformation of the pixel values.
+The output is a 768 dimension latent vector that no longer directly represents the pixel values but instead a learned representation of the patch.
+
+<Image alt="patch flat" src="/static/images/patch_flat.png" width={640} height={240} />
+
+Note that the patch sequence order matters here. Just like with text, the meaning changes if the patches are shuffled.
 
 <Image
   alt="patch reordered grid"
@@ -133,23 +137,7 @@ The encoded image embeddings are subsequently input to the transformer block in 
 
 <Image alt="patch embedding" src="/static/images/patch_embedding.png" width={640} height={240} />
 
-We can see in the model card that this model has been trained for zero shot image classification on the ImageNet dataset.
-So our lionfish was actually in the training set so hopefully the model can predict the correct class:
-
-```python
-inputs = processor(images=image, return_tensors="pt")
-outputs = model(**inputs)
-logits = outputs.logits
-# model predicts one of the 1000 ImageNet classes
-predicted_class_idx = logits.argmax(-1).item()
-print("Predicted class:", model.config.id2label[predicted_class_idx])
-```
-
-```
-Predicted class: lionfish
-```
-
-Indeed it does!
+Finally, we have our image patch tokens, which are the input to the transformer encoder.
 
 ## Visualising Patch Embeddings
 
@@ -194,11 +182,31 @@ Note that in an vision capable LLM trained on a different task, the activations 
   height={640}
 />
 
+We can see in the [model card](https://huggingface.co/google/vit-base-patch16-224) that this model has been trained for zero shot image classification on the ImageNet dataset.
+There is a prediction processing head that takes the output of the transformer blocks to maps the final hidden state to the 1,000 ImageNet classes.
+
+So our lionfish was actually in the training set so hopefully the model can predict the correct class:
+
+```python
+inputs = processor(images=image, return_tensors="pt")
+outputs = model(**inputs)
+logits = outputs.logits
+# model predicts one of the 1000 ImageNet classes
+predicted_class_idx = logits.argmax(-1).item()
+print("Predicted class:", model.config.id2label[predicted_class_idx])
+```
+
+```
+Predicted class: lionfish
+```
+
+Indeed it does!
+
 ## Conclusion
 
-We have learned about vision transformers (likely used in modern LLMs vision encoders).
-We saw how images are encoded by splitting them into patches, linearly embedding them, adding position embeddings, creating a sequence of vectors.
-We got a glimpse of how representation allows the model to understand and classify images, and perform other tasks performed by vision capable LLMs.
+We have learned about vision transformers (likely similar to those used in modern LLMs vision encoders).
+We saw how images are tokenised splitting them into patches, linearly projecting them and adding position embeddings.
+We got a glimpse of how this representation allows the model to understand and classify images, and perform other tasks performed by vision capable LLMs.
 
 You can find the code used to create the visualisations for this post in this [notebook](https://github.com/latenttime/blog/blob/main/notebooks/llm-vision.ipynb).
 
