@@ -79,6 +79,7 @@ More recently, transformers have been applied to computer vision tasks, which we
 <Image alt="nn" src="/static/images/nn.png" width={500} height={300} />
 
 For an excellent introduction to deep neural networks, check out 3Blue1Brown's [Neural Networks series](https://www.youtube.com/watch?v=aircAruvnKk).
+For a more rigorous treatment, dive into Simon Prince's new book, [Understanding Deep Learning](https://www.amazon.co.uk/dp/0262048647).
 
 ## Vision Transformer (ViT)
 
@@ -245,6 +246,11 @@ Just like in the language only LLMs, the model is then fine-tuned on a downstrea
 For Idefics2, the fine tuning dataset was [The Cauldron](https://huggingface.co/datasets/HuggingFaceM4/the_cauldron), a collection of 50 vision-language datasets.
 
 Kudos to the HF team, this is an awesome asset for the VLM community! 🤗
+
+After training, we can run inference with a combined text and image input.
+The multimodal representations are computed and passed to the LLM transformer blocks to process these embedding vectors to understand the context and autoregressively generate the output text.
+
+Finally, we have a vision capable LLM! 👀
 
 ## Conclusion
 
