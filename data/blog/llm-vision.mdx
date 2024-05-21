@@ -1,9 +1,9 @@
 ---
 title: 👀 How does a LLM see?
 date: '2024-05-06'
-tags: ['2024', 'llm', 'theory', 'cv', 'transformers']
+tags: ['2024', 'llm', 'vlm', 'vit', 'theory', 'cv', 'transformers']
 draft: false
-summary: Image encoding with Vision Transformers (ViT).
+summary: Building a Vision Language Model (VLM) with an LLM + Vision Encoder.
 ---
 
 In 2024, many foundation models have native vision capabilities.
@@ -223,14 +223,53 @@ Indeed it does!
 
 ## Vision Language Model
 
+Now that we have a basic understanding of how a vision transformer works, we can see how this architecture can be used in a vision capable LLM.
+Building upon image classification, the focus here shifts to autoregressive text generation (similar to a language model), conditioned on a combination of interleaved images and text.
+This opens up new possibilities for tasks such as general visual question answering, counting, captioning, text transcription, document understanding, chart and figure understanding, table understanding, visual reasoning, geometry, spotting differences between two images, or even converting a screenshot to functional code.
+
+Remember the state of the art is developing rapidly and the details of the latest models are not always public.
+Luckily for the open source community, the recent [Idefics2](https://huggingface.co/HuggingFaceM4/idefics2-8b) model from Hugging Face comes with a recently released paper, [What matters when building vision-language models?](https://arxiv.org/pdf/2405.02246).
+This will be our reference for the following section, but other models may have different architectures.
+
+SOTA VLMs are commonly composed by gluing together pre-trained unimodal backbones, and initialising some new parameters to connect the modalities.
+Idefics2 reuses [Mistral-7B](https://huggingface.co/google/siglip-so400m-patch14-384) for the language backbone and [SigLIP-SO400M](https://huggingface.co/google/siglip-so400m-patch14-384) for the vision encoder.
+
+When fusing the two modalities, the image and text embeddings are concatenated and passed through a transformer encoder.
+The visual embeddings from the from the visual encoder are projected through a learned linear mapping into the input space of the language model.
+
+<Image alt="vlm" src="/static/images/vlm.png" width={640} height={640} />
+
+The new parameters first undergo a pre-training phase on a large dataset of image-text pairs.
+The Hugging Face team also released the [OBELICS](https://huggingface.co/datasets/HuggingFaceM4/OBELICS) dataset used for this pre-training.
+Just like in the language only LLMs, the model is then fine-tuned on a downstream task in an instruction fine-tuning stage.
+For Idefics2, the fine tuning dataset was [The Cauldron](https://huggingface.co/datasets/HuggingFaceM4/the_cauldron), a collection of 50 vision-language datasets.
+
+Kudos to the HF team, this is an awesome asset for the VLM community! 🤗
+
 ## Conclusion
 
-We have learned about vision transformers (likely similar to those used in modern LLMs vision encoders).
-We saw how images are tokenised splitting them into patches, linearly projecting them and adding position embeddings.
-We got a glimpse of how this representation allows the model to understand and classify images, and perform other tasks performed by vision capable LLMs.
+We started by reviewing some fundamentals of computer vision.
+Next we learned about transformers can be applied to computer vision with vision transformer (ViT) architectures.
+Finally, we saw how we can fuse LLM and VE backbones to create a vision capable LLM, a VLM.
 
 You can find the code used to create the visualisations for this post in this [notebook](https://github.com/latenttime/blog/blob/main/notebooks/llm-vision.ipynb).
 
 Subscribe to be notified for the next post, where we will look at how we can evaluate the visual acuity of some popular vision LLMs.
 
 Thanks for reading, please comment, tweet or email me with any questions or feedback.
+
+## References
+
+https://arxiv.org/pdf/2010.11929
+
+https://arxiv.org/pdf/2405.02246
+
+https://arxiv.org/abs/2301.13823
+
+https://huggingface.co/google/vit-base-patch16-224
+
+https://huggingface.co/HuggingFaceM4/idefics2-8b
+
+https://huggingface.co/google/siglip-so400m-patch14-384
+
+https://huggingface.co/mistralai/Mistral-7B-v0.1
