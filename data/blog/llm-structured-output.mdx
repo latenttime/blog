@@ -1,0 +1,75 @@
+---
+title: Structure from Language
+date: '2024-08-16'
+tags: ['2024', 'llm', 'json', 'theory']
+draft: true
+summary: Three levels of generating structured outputs from language models.
+---
+
+# Structured Outputs Blog
+
+Large Language Models are text token generators.
+We give them unicode strings, they turn them into tokens (a sequence of numbers) and then predict a probability distribution over the next item in the sequence.
+A common way to choose sample the next token from the distribution is called **greedy decoding**.
+This is simply selecting the token with the highest probability.
+
+The cat sat on the mat
+hat
+bath
+rocket
+
+This gives us no structural guarantees to the content of the output unicode strings.
+Empirically we see remarkable adherence to the semantic grammar of language, but none of these rules have been defined.
+Instead they have been learned from data. This may be fine for building a chatbot app, where we have a UI chat bubble to be hydrated with the LLM output and displayed for the user to read.
+
+But what if we’re composing an application where the LLM generator block is near the start of our system?
+Maybe it’s helping us to extract information from unstructured documents, or it could be doing a zero shot classification task.
+Now we require a contract between components to be able to build robust systems.
+
+A standard approach is to write this contract in software.
+For example, we could define a JSON Schema that both parties agree upon, which represents the data structure.
+This schema would outline the required fields, their data types, and any validation rules.
+
+## Level 1 - Prompting
+
+Since the popularity of LLM powered applications exploded in 2019, developers have been trying to prompt models to output JSON in order to support this pattern.
+People have come up with creative ways to improve performance for example saying “please please please output valid JSON, my career depends on it!”.  
+Developers may try to fix JSON errors post-generation with libraries like `jsonrepair`.
+This may work in testing and for simple cases, but it’s fundamentally fragile and hard to ship features using this method in a production codebase.
+
+## Level 2 - Function calling (tool use)
+
+We can do better by being explicit about the fact we want to generate JSON. We can do this by using a feature called function calling.
+This gives the model the option to intelligently choose to output a JSON object containing arguments to call one or many functions. 
+So we supply a JSON schema and the LLM generates JSON which we can use to call a function in our code.
+
+When we do this with the popular AI model providers APIs, we don’t get any guarantees that the model will actually generate JSON compliant with the JSON schema we asked for 100% of the time.
+OpenAI and Anthropic etc can try to optimise for this by training their models to be better at this task, but some percentage of the time we will still get malformed outputs.
+
+Libraries like Instructor, LangChain, Marvin and llama index all have developer tools that help to bridge this gap.
+Typically this is done by defining the output schema in Pydantic or Zod, serialising it to JSON Schema and then validating the LLM response fits the data model explicitly.
+In case it doesn’t comply, the API call can be re-tried with the added context of the actual validation error.
+These libraries help a lot and save developers time in not reimplementing the data modelling, prompting, retries and validation logic.
+
+## Level 3 - Structured Output
+
+We can do even better if we pull some tricks in the way tokens are sampled from the language model. This is a technique called constrained decoding. Remember that the fundamental challenge is that the definition of a valid token according to a JSON schema is a function of the position in the output sequence. This means we need a dynamic way to define what is a valid next token.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "value": { "type": "number" }
+  },
+  "required": ["value"],
+  "additionalProperties": false
+}
+```
+
+One way this can be achieved is by converting our JSON Schema into a context-free grammar (CFG). This is a formal way to specify a language plus rules which govern correct use of the language. Once this is defined, we have a definition of validity at sample time. By running this validity test during autoregressive inference, we have knowledge of which tokens in the vocabulary could be valid and simply set the probability of all other tokens to 0 before the final sampling.
+
+Note that this trick requires that you have access to the full logits the LLM generates. This is the full probability distribution over the token vocabulary. Recently, OpenAI announced support for this directly in their API. Hopefully we’ll get similar features through other AI model providers soon.
+
+Read the original paper and have a look at the outlines project if you’re self-hosting a model in which you’d like to make use of structured outputs.
+
+I hope that was a useful overview, let me know if you build something cool with structured outputs from LLMs after reading this!
